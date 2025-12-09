@@ -5,33 +5,32 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: jpedra-v <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/25 12:40:20 by jpedra-v          #+#    #+#             */
-/*   Updated: 2025/11/28 16:46:03 by jpedra-v         ###   ########.fr       */
+/*   Created: 2025/12/09 12:12:00 by jpedra-v          #+#    #+#             */
+/*   Updated: 2025/12/09 12:12:10 by jpedra-v         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef GET_NEXT_LINE_H
 # define GET_NEXT_LINE_H
 
+# include <stdlib.h>
+# include <unistd.h>
+
 # ifndef BUFFER_SIZE
 #  define BUFFER_SIZE 42
 # endif
 
-# include <unistd.h>
-# include <stdlib.h>
+char	*get_next_line(int fd);
+char	*ft_line(char *buffer);
+char	*ft_next(char *buffer);
+char	*ft_free(char *s1, char *s2);
+char	*read_file(int fd, char *res);
 
-/* --- Main functions --- */
-char		*get_next_line(int fd);
-char		*read_until_enter(int fd, char *save);
-char		*make_line_from(char *save);
-char		*the_rest(char *save);
-
-/* --- Utils --- */
-size_t		ft_strlen(char *s);
-char		*ft_free_strjoin(char *save, char *tmp);
-char		*ft_strjoin(char *s1, char *s2);
-char		*ft_strchr(char *save, int c);
-void		*ft_calloc(size_t count, size_t size);
+size_t	ft_strlen(const char *s);
+void	*ft_calloc(size_t count, size_t size);
+void	ft_bzero(void *s, size_t n);
+char	*ft_strjoin(const char *s1, const char *s2);
+char	*ft_strchr(const char *s, int c);
 
 #endif
 
@@ -42,111 +41,121 @@ void		*ft_calloc(size_t count, size_t size);
 /*                                                    +:+ +:+         +:+     */
 /*   By: jpedra-v <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/25 12:40:09 by jpedra-v          #+#    #+#             */
-/*   Updated: 2025/11/28 12:51:41 by jpedra-v         ###   ########.fr       */
+/*   Created: 2025/12/09 12:11:23 by jpedra-v          #+#    #+#             */
+/*   Updated: 2025/12/09 12:11:31 by jpedra-v         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
 
-/* Extract the part of 'save' after the first newline */
-char	*the_rest(char *save)
+char	*ft_free(char *s1, char *s2)
 {
-	char	*new_save;
-	int		i;
-	int		n;
+	char	*temp;
 
-	i = 0;
-	n = 0;
-	while (save[i] && save[i] != '\n')
-		i++;
-	if (!save[i])
-	{
-		free(save);
-		return (NULL);
-	}
-	new_save = ft_calloc(ft_strlen(save) - i, sizeof(char));
-	if (!new_save)
-	{
-		free(save);
-		return (NULL);
-	}
-	i++;
-	while (save[i])
-		new_save[n++] = save[i++];
-	free(save);
-	return (new_save);
+	if (!s1)
+		return (ft_strjoin("", s2));
+	temp = ft_strjoin(s1, s2);
+	free(s1);
+	return (temp);
 }
 
-/* Make a line including the newline character */
-char	*make_line_from(char *save)
+char	*ft_next(char *buffer)
 {
-	char	*line;
 	int		i;
 	int		j;
+	char	*next;
 
 	i = 0;
-	j = 0;
-	if (!save || !*save)
-		return (NULL);
-	while (save[i] && save[i] != '\n')
+	while (buffer[i] && buffer[i] != '\n')
 		i++;
-	line = ft_calloc(i + 2, sizeof(char));
+	if (!buffer[i])
+	{
+		free(buffer);
+		return (NULL);
+	}
+	next = ft_calloc(ft_strlen(buffer) - i, 1);
+	if (!next)
+		return (NULL);
+	i++;
+	j = 0;
+	while (buffer[i])
+		next[j++] = buffer[i++];
+	free(buffer);
+	return (next);
+}
+
+char	*ft_line(char *buffer)
+{
+	int		i;
+	char	*line;
+
+	if (!buffer || !buffer[0])
+		return (NULL);
+	i = 0;
+	while (buffer[i] && buffer[i] != '\n')
+		i++;
+	line = ft_calloc(i + 2, 1);
 	if (!line)
 		return (NULL);
-	while (j < i)
+	i = 0;
+	while (buffer[i] && buffer[i] != '\n')
 	{
-		line[j] = save [j];
-		j++;
+		line[i] = buffer[i];
+		i++;
 	}
-	if (save[i] == '\n')
-		line[i] = '\n';
+	if (buffer[i] && buffer[i] == '\n')
+		line[i++] = '\n';
 	return (line);
 }
 
-/* Read from file descriptor until newline or EOF */
-char	*read_until_enter(int fd, char *save)
+char	*read_file(int fd, char *res)
 {
-	char	*tmp;
-	int		n_of_chars;
+	char	*buffer;
+	int		bytes;
 
-	if (!save)
-		save = ft_calloc(1, 1);
-	tmp = ft_calloc(BUFFER_SIZE + 1, sizeof(char));
-	if (!tmp)
+	if (!res)
+		res = ft_calloc(1, 1);
+	buffer = ft_calloc(BUFFER_SIZE + 1, 1);
+	if (!buffer)
 		return (NULL);
-	n_of_chars = 1;
-	while (n_of_chars > 0)
+	bytes = 1;
+	while (bytes > 0)
 	{
-		n_of_chars = read(fd, tmp, BUFFER_SIZE);
-		if (n_of_chars == -1)
-		{
-			free(tmp);
-			free(save);
-			return (NULL);
-		}
-		tmp[n_of_chars] = '\0';
-		save = ft_free_strjoin(save, tmp);
-		if (!save || ft_strchr(save, '\n'))
+		bytes = read(fd, buffer, BUFFER_SIZE);
+		if (bytes == -1)
+			return (free(buffer), free(res), NULL);
+		buffer[bytes] = '\0';
+		if (bytes == 0)
+			break ;
+		res = ft_free(res, buffer);
+		if (ft_strchr(buffer, '\n'))
 			break ;
 	}
-	free(tmp);
-	return (save);
+	free(buffer);
+	if (!res[0])
+		return (free(res), NULL);
+	return (res);
 }
 
-/* Main function */
 char	*get_next_line(int fd)
 {
-	static char	*save;
+	static char	*buffer;
 	char		*line;
 
 	if (fd < 0 || BUFFER_SIZE <= 0 || read(fd, 0, 0) < 0)
+	{
+		if (buffer)
+		{
+			free(buffer);
+			buffer = NULL;
+		}
 		return (NULL);
-	save = read_until_enter(fd, save);
-	if (!save)
+	}
+	buffer = read_file(fd, buffer);
+	if (!buffer)
 		return (NULL);
-	line = make_line_from(save);
-	save = the_rest(save);
+	line = ft_line(buffer);
+	buffer = ft_next(buffer);
 	return (line);
 }
 
@@ -157,93 +166,87 @@ char	*get_next_line(int fd)
 /*                                                    +:+ +:+         +:+     */
 /*   By: jpedra-v <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/25 12:41:16 by jpedra-v          #+#    #+#             */
-/*   Updated: 2025/11/28 16:43:23 by jpedra-v         ###   ########.fr       */
+/*   Created: 2025/12/09 12:12:34 by jpedra-v          #+#    #+#             */
+/*   Updated: 2025/12/09 12:12:45 by jpedra-v         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
 
-/* strlen */
-size_t	ft_strlen(char *s)
+size_t	ft_strlen(const char *s)
 {
 	size_t	i;
 
 	i = 0;
-	while (s && s[i])
+	while (s[i])
 		i++;
 	return (i);
 }
 
-/* strchr */
-char	*ft_strchr(char *save, int c)
+void	ft_bzero(void *s, size_t n)
 {
-	int	i;
+	size_t	i;
+	char	*str;
 
+	str = (char *)s;
 	i = 0;
-	if (!save)
-		return (NULL);
-	while (save[i])
+	while (i < n)
 	{
-		if (save[i] == (char)c)
-			return (&save[i]);
+		str[i] = '\0';
 		i++;
 	}
-	return (NULL);
 }
 
-/* calloc */
 void	*ft_calloc(size_t count, size_t size)
 {
-	char	*ptr;
-	size_t	i;
+	void	*ptr;
 
 	ptr = malloc(count * size);
 	if (!ptr)
 		return (NULL);
-	i = 0;
-	while (i < count * size)
-	{
-		ptr[i] = 0;
-		i++;
-	}
+	ft_bzero(ptr, count * size);
 	return (ptr);
 }
 
-/* strjoin */
-char	*ft_strjoin(char *s1, char *s2)
+char	*ft_strjoin(const char *s1, const char *s2)
 {
-	char	*s;
+	char	*res;
 	size_t	i;
 	size_t	j;
 
-	if (!s1)
-		s1 = ft_calloc(1, 1);
 	if (!s1 || !s2)
 		return (NULL);
-	s = ft_calloc(ft_strlen(s1) + ft_strlen(s2) + 1, sizeof(char));
-	if (!s)
+	res = malloc(ft_strlen(s1) + ft_strlen(s2) + 1);
+	if (!res)
 		return (NULL);
 	i = 0;
 	while (s1[i])
 	{
-		s[i] = s1[i];
+		res[i] = s1[i];
 		i++;
 	}
 	j = 0;
 	while (s2[j])
-		s[i++] = s2[j++];
-	s[i] = '\0';
-	return (s);
+	{
+		res[i + j] = s2[j];
+		j++;
+	}
+	res[i + j] = '\0';
+	return (res);
 }
 
-/* Free strjoin and return new string */
-char	*ft_free_strjoin(char *save, char *tmp)
+char	*ft_strchr(const char *s, int c)
 {
-	char	*new_save;
+	size_t	i;
 
-	new_save = ft_strjoin(save, tmp);
-	if (save)
-		free(save);
-	return (new_save);
+	i = 0;
+	while (s[i])
+	{
+		if (s[i] == (char)c)
+			return ((char *)(s + i));
+		i++;
+	}
+	if (c == '\0')
+		return ((char *)(s + i));
+	return (NULL);
 }
